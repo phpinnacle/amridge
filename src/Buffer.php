@@ -20,4 +20,14 @@ final class Buffer extends ByteBuffer
     {
         return $this->append(\pack("P", $value));
     }
+
+    public function readUint64LE(int $offset): int
+    {
+        return (int) \unpack("P", $this->read(8, $offset))[1];
+    }
+
+    public function consumeUint64LE(): int
+    {
+        return (int) \unpack("P", $this->consume(8))[1];
+    }
 }

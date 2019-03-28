@@ -18,7 +18,7 @@ func (a *App) Hi(name string, r *string) error {
 }
 
 func main() {
-	ln, err := net.Listen("tcp", ":6001")
+	ln, err := net.Listen("unix", "/tmp/server.sock")
 	if err != nil {
 		panic(err)
 	}

@@ -39,6 +39,8 @@ final class Parser
 
     /**
      * @return null|Frame
+     * @throws Exception\PrefixException
+     * @throws Exception\ServiceException
      * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public function parse(): ?Frame
@@ -48,7 +50,7 @@ final class Parser
         }
 
         $flags  = $this->buffer->readUint8(0);
-        $sizeLE = \unpack("P", $this->buffer->read(8, 1))[1];
+        $sizeLE = $this->buffer->readUint64LE(1);
         $sizeBE = $this->buffer->readUint64(9);
     
         if ($sizeLE !== $sizeBE) {
@@ -62,7 +64,7 @@ final class Parser
         $this->buffer->discard(17);
 
         $method = $this->buffer->consume($sizeBE - 8);
-        $seq    = \unpack("P", $this->buffer->consume(8))[1];
+        $seq    = $this->buffer->consumeUint64LE();
         $body   = $this->consumeBody();
 
         return new Frame($seq, $method, $body, $flags);
@@ -70,12 +72,14 @@ final class Parser
 
     /**
      * @return string
+     * @throws Exception\PrefixException
+     * @throws Exception\ServiceException
      * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     private function consumeBody(): string
     {
         $flags  = $this->buffer->consumeUint8();
-        $sizeLE = \unpack("P", $this->buffer->consume(8))[1];
+        $sizeLE = $this->buffer->consumeUint64LE();
         $sizeBE = $this->buffer->consumeUint64();
         $body   = $this->buffer->consume($sizeBE);
 

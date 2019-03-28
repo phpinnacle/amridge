@@ -32,7 +32,7 @@ final class Frame
     public $method;
 
     /**
-     * @var string
+     * @var mixed
      */
     public $payload;
 
@@ -44,10 +44,10 @@ final class Frame
     /**
      * @param int    $seq
      * @param string $method
-     * @param string $payload
+     * @param mixed  $payload
      * @param int    $flags
      */
-    public function __construct(int $seq, string $method, string $payload = '', int $flags = 0)
+    public function __construct(int $seq, string $method, $payload = '', int $flags = 0)
     {
         $this->seq     = $seq;
         $this->method  = $method;

@@ -1,17 +1,17 @@
 <?php
-use Spiral\Goridge;
+
+use Spiral\Goridge\RPC;
+use Spiral\Goridge\SocketRelay;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$rpc = new Goridge\RPC(
-  new Goridge\SocketRelay("127.0.0.1", 6001)
-);
+$rpc = new RPC(new SocketRelay("/tmp/server.sock", null, SocketRelay::SOCK_UNIX));
 
 echo $rpc->call("App.Hi", "Connect") . \PHP_EOL;
 
 $time = microtime(true);
 
-for ($i = 0; $i < 100; ++$i) {
+for ($i = 0; $i < 10; ++$i) {
    echo $rpc->call("App.Hi", "RPC {$i}") . \PHP_EOL;
 }
 
