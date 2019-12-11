@@ -10,31 +10,20 @@
 
 declare(strict_types = 1);
 
-namespace PHPinnacle\Amridge;
+namespace PHPinnacle\Goridge;
 
-final class Frame
+class Frame
 {
     const
-        PAYLOAD_NONE    = 2,
-        PAYLOAD_RAW     = 4,
-        PAYLOAD_ERROR   = 8,
-        PAYLOAD_CONTROL = 16
+        PAYLOAD_RAW  = 1
     ;
 
-    /**
-     * @var int
-     */
-    public $seq;
-
-    /**
-     * @var string
-     */
-    public $method;
-
-    /**
-     * @var string
-     */
-    public $payload;
+    const
+        OPCODE_ERROR    = 1,
+        OPCODE_REQEUST  = 2,
+        OPCODE_RESPONSE = 4,
+        OPCODE_CONTROL  = 8
+    ;
 
     /**
      * @var int
@@ -42,17 +31,30 @@ final class Frame
     public $flags;
 
     /**
-     * @param int    $seq
-     * @param string $method
-     * @param string $payload
-     * @param int    $flags
+     * @var int
      */
-    public function __construct(int $seq, string $method, string $payload = '', int $flags = 0)
+    public $opcode;
+
+    /**
+     * @var string
+     */
+    public $body;
+
+    /**
+     * @var int
+     */
+    public $stream = 1;
+
+    /**
+     * @param int    $flags
+     * @param int    $opcode
+     * @param string $body
+     */
+    public function __construct(int $flags, int $opcode, string $body)
     {
-        $this->seq     = $seq;
-        $this->method  = $method;
-        $this->payload = $payload;
-        $this->flags   = $flags;
+        $this->flags  = $flags;
+        $this->opcode = $opcode;
+        $this->body   = $body;
     }
 
     /**
@@ -62,20 +64,13 @@ final class Frame
      */
     public function pack(Buffer $buffer) :string
     {
-        $payload = $this->flags & self::PAYLOAD_RAW ? $this->payload : \json_encode($this->payload);
-        $sizeP   = \strlen($payload);
-        $sizeM   = \strlen($this->method) + 8;
-
         return $buffer
-            ->appendUint8(Frame::PAYLOAD_CONTROL | Frame::PAYLOAD_RAW)
-            ->appendUint64LE($sizeM)
-            ->appendUint64($sizeM)
-            ->append($this->method)
-            ->appendUint64LE($this->seq)
             ->appendUint8($this->flags)
-            ->appendUint64LE($sizeP)
-            ->appendUint64($sizeP)
-            ->append($payload)
+            ->appendUint8($this->opcode)
+            ->appendUint16($this->stream)
+            ->appendUint32(\strlen($this->body))
+            ->appendUint8(1) // TODO: check bit!
+            ->append($this->body)
             ->flush()
         ;
     }

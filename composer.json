@@ -18,7 +18,6 @@
     "require": {
         "php": "^7.1",
         "ext-json": "*",
-        "spiral/goridge": "^2.0.0",
         "amphp/socket": "^0.10.11",
         "phpinnacle/buffer": "^1.0"
     },
@@ -28,12 +27,12 @@
     },
     "autoload": {
         "psr-4": {
-            "PHPinnacle\\Amridge\\": "src"
+            "PHPinnacle\\Goridge\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "PHPinnacle\\Amridge\\Tests\\": "tests"
+            "PHPinnacle\\Goridge\\Tests\\": "tests"
         }
     },
     "scripts": {

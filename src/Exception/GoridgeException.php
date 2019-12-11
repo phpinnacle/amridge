@@ -1,6 +1,6 @@
 <?php
 /**
- * This file is part of PHPinnacle/Amridge.
+ * This file is part of PHPinnacle/Goridge.
  *
  * (c) PHPinnacle Team <dev@phpinnacle.com>
  *
@@ -10,8 +10,8 @@
 
 declare(strict_types = 1);
 
-namespace PHPinnacle\Amridge\Exception;
+namespace PHPinnacle\Goridge\Exception;
 
-final class RelayException extends AmridgeException
+abstract class GoridgeException extends \Exception
 {
 }

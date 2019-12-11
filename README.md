@@ -1,9 +1,6 @@
 # PHPinnacle Amridge
 
-[![Latest Version on Packagist][ico-version]][link-packagist]
 [![Software License][ico-license]](LICENSE.md)
-[![Coverage Status][ico-scrutinizer]][link-scrutinizer]
-[![Total Downloads][ico-downloads]][link-downloads]
 
 PHPinnacle Amridge is asynchronous port of [Goridge](https://github.com/spiral/goridge) protocol client.
 
@@ -59,18 +56,16 @@ func main() {
 And PHP client:
 
 ```php
-<?php
-
 use Amp\Loop;
-use PHPinnacle\Amridge\RPC;
+use PHPinnacle\Goridge\RPC;
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 Loop::run(function () {
     /** @var RPC $rpc */
     $rpc = yield RPC::connect('tcp://127.0.0.1:6001');
 
-    echo yield $rpc->call("App.Hi", "Hello from async PHP to Golang!");
+    echo yield $rpc->call("App.Hi", "World");
 
     $rpc->disconnect();
 });
@@ -105,13 +100,7 @@ If you discover any security related issues, please email dev@phpinnacle.com ins
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
 
-[ico-version]: https://img.shields.io/packagist/v/phpinnacle/amridge.svg?style=flat-square
 [ico-license]: https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
-[ico-scrutinizer]: https://img.shields.io/scrutinizer/coverage/g/phpinnacle/amridge.svg?style=flat-square
-[ico-downloads]: https://img.shields.io/packagist/dt/phpinnacle/amridge.svg?style=flat-square
 
-[link-packagist]: https://packagist.org/packages/phpinnacle/amridge
-[link-scrutinizer]: https://scrutinizer-ci.com/g/phpinnacle/amridge/code-structure
-[link-downloads]: https://packagist.org/packages/phpinnacle/amridge
 [link-author]: https://github.com/phpinnacle
 [link-contributors]: https://github.com/phpinnacle/amridge/graphs/contributors

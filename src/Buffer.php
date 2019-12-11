@@ -1,6 +1,6 @@
 <?php
 /**
- * This file is part of PHPinnacle/Amridge.
+ * This file is part of PHPinnacle/Goridge.
  *
  * (c) PHPinnacle Team <dev@phpinnacle.com>
  *
@@ -10,14 +10,10 @@
 
 declare(strict_types = 1);
 
-namespace PHPinnacle\Amridge;
+namespace PHPinnacle\Goridge;
 
 use PHPinnacle\Buffer\ByteBuffer;
 
 final class Buffer extends ByteBuffer
 {
-    public function appendUint64LE(int $value): self
-    {
-        return $this->append(\pack("P", $value));
-    }
 }

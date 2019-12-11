@@ -10,8 +10,8 @@
 
 declare(strict_types = 1);
 
-namespace PHPinnacle\Amridge\Exception;
+namespace PHPinnacle\Goridge\Exception;
 
-final class PrefixException extends AmridgeException
+final class JSONException extends GoridgeException
 {
 }

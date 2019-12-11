@@ -1,6 +1,6 @@
 <?php
 /**
- * This file is part of PHPinnacle/Amridge.
+ * This file is part of PHPinnacle/Goridge.
  *
  * (c) PHPinnacle Team <dev@phpinnacle.com>
  *
@@ -10,7 +10,7 @@
 
 declare(strict_types = 1);
 
-namespace PHPinnacle\Amridge;
+namespace PHPinnacle\Goridge;
 
 final class Parser
 {
@@ -43,50 +43,25 @@ final class Parser
      */
     public function parse(): ?Frame
     {
-        if ($this->buffer->size() < 17) {
+        if ($this->buffer->size() < 9) {
             return null;
         }
 
         $flags  = $this->buffer->readUint8(0);
-        $sizeLE = \unpack("P", $this->buffer->read(8, 1))[1];
-        $sizeBE = $this->buffer->readUint64(9);
-    
-        if ($sizeLE !== $sizeBE) {
-            throw new Exception\PrefixException("invalid prefix (checksum)");
-        }
+        $opcode = $this->buffer->readUint8(1);
+        $stream = $this->buffer->readUint16(2);
+        $size   = $this->buffer->readUint32(4);
+        $check  = $this->buffer->readUint8(8); // TODO: check bit!
 
-        if ($this->buffer->size() < $sizeBE + 17) {
+        if ($this->buffer->size() < $size + 9) {
             return null;
         }
 
-        $this->buffer->discard(17);
+        $this->buffer->discard(9);
 
-        $method = $this->buffer->consume($sizeBE - 8);
-        $seq    = \unpack("P", $this->buffer->consume(8))[1];
-        $body   = $this->consumeBody();
+        $frame = new Frame($flags, $opcode, $this->buffer->consume($size));
+        $frame->stream = $stream;
 
-        return new Frame($seq, $method, $body, $flags);
-    }
-
-    /**
-     * @return string
-     * @throws \PHPinnacle\Buffer\BufferOverflow
-     */
-    private function consumeBody(): string
-    {
-        $flags  = $this->buffer->consumeUint8();
-        $sizeLE = \unpack("P", $this->buffer->consume(8))[1];
-        $sizeBE = $this->buffer->consumeUint64();
-        $body   = $this->buffer->consume($sizeBE);
-
-        if ($sizeLE !== $sizeBE) {
-            throw new Exception\PrefixException("invalid prefix (checksum)");
-        }
-
-        if ($flags & Frame::PAYLOAD_ERROR && $flags & Frame::PAYLOAD_RAW) {
-            throw new Exception\ServiceException("error '$body'");
-        }
-
-        return $flags & Frame::PAYLOAD_RAW ? $body : \json_decode($body, true);
+        return $frame;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * This file is part of PHPinnacle/Amridge.
+ * This file is part of PHPinnacle/Buffer.
  *
  * (c) PHPinnacle Team <dev@phpinnacle.com>
  *
@@ -8,10 +8,10 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+namespace PHPinnacle\Amridge\Tests;
 
-namespace PHPinnacle\Amridge\Exception;
+use PHPUnit\Framework\TestCase;
 
-final class ServiceException extends AmridgeException
+class GoridgeTest extends TestCase
 {
 }

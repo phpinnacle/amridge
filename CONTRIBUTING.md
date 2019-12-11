@@ -2,12 +2,10 @@
 
 Contributions are **welcome** and will be fully **credited**.
 
-We accept contributions via Pull Requests on [Github](https://github.com/phpinnacle/buffer).
+We accept contributions via Pull Requests on [Github](https://github.com/phpinnacle/amridge).
 
 
 ## Pull Requests
-
-- **[PSR-2 Coding Standard](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-2-coding-style-guide.md)**
 
 - **Add tests!** - Your patch won't be accepted if it doesn't have tests.
 
