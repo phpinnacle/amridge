@@ -16,16 +16,14 @@ use Amp\ByteStream\InputStream;
 use Amp\ByteStream\OutputStream;
 use Amp\ByteStream\ResourceInputStream;
 use Amp\ByteStream\ResourceOutputStream;
-use Amp\Deferred;
-use Amp\Loop;
+use Amp\Emitter;
+use Amp\Iterator;
 use Amp\Promise;
-use Amp\Socket\ClientConnectContext;
+use Amp\Socket\ConnectContext;
 use function Amp\asyncCall, Amp\call, Amp\Socket\connect;
 
 final class Relay
 {
-    const WRITE_ROUNDS = 64;
-
     /**
      * @var InputStream
      */
@@ -35,11 +33,6 @@ final class Relay
      * @var OutputStream
      */
     private $output;
-
-    /**
-     * @var Sequence
-     */
-    private $sequence;
 
     /**
      * @var Buffer
@@ -57,19 +50,19 @@ final class Relay
     private $queue;
 
     /**
-     * @var bool
+     * @var Emitter
      */
-    private $processing = false;
+    private $emitter;
+
+    /**
+     * @var Iterator
+     */
+    private $iterator;
 
     /**
      * @var callable[]
      */
     private $callbacks = [];
-
-    /**
-     * @var int
-     */
-    private $lastWrite = 0;
 
     /**
      * @param InputStream  $input
@@ -79,10 +72,13 @@ final class Relay
     {
         $this->input    = $input;
         $this->output   = $output;
-        $this->sequence = new Sequence();
+
         $this->buffer   = new Buffer();
         $this->parser   = new Parser();
         $this->queue    = new \SplQueue();
+
+        $this->emitter  = new Emitter();
+        $this->iterator = $this->emitter->iterate();
     }
 
     /**
@@ -96,14 +92,14 @@ final class Relay
     public static function connect(string $uri, int $timeout = 0, int $attempts = 0, bool $noDelay = false): Promise
     {
         return call(function () use ($uri, $timeout, $attempts, $noDelay) {
-            $clientContext = new ClientConnectContext;
-
-            if ($attempts > 0) {
-                $clientContext = $clientContext->withMaxAttempts($attempts);
-            }
+            $clientContext = new ConnectContext;
 
             if ($timeout > 0) {
                 $clientContext = $clientContext->withConnectTimeout($timeout);
+            }
+
+            if ($attempts > 0) {
+                $clientContext = $clientContext->withMaxAttempts($attempts);
             }
 
             if ($noDelay) {
@@ -115,7 +111,7 @@ final class Relay
             $self = new self($socket, $socket);
             $self->listen();
 
-            return $this;
+            return $self;
         });
     }
 
@@ -140,31 +136,23 @@ final class Relay
      *
      * @param Frame $frame
      *
-     * @return Promise
+     * @return Promise<void>
      */
     public function send(Frame $frame): Promise
     {
-        $frame->stream = $this->sequence->reserve();
+        return $this->output->write($frame->pack($this->buffer));
+    }
 
-        $deferred = new Deferred;
+    /**
+     * @return Promise<Frame>
+     */
+    public function receive(): Promise
+    {
+        return call(function () {
+            yield $this->iterator->advance();
 
-        $this->subscribe($frame->stream, function (Frame $frame) use ($deferred) {
-            $this->sequence->release($frame->stream);
-
-            $deferred->resolve($frame);
+            return $this->iterator->getCurrent();
         });
-
-        $this->queue->enqueue($frame->pack($this->buffer));
-
-        if ($this->processing === false) {
-            $this->processing = true;
-
-            Loop::defer(function () {
-                $this->write();
-            });
-        }
-
-        return $deferred->promise();
     }
 
     /**
@@ -176,6 +164,16 @@ final class Relay
     public function subscribe(int $stream, callable $handler): void
     {
         $this->callbacks[$stream] = $handler;
+    }
+
+    /**
+     * @param int $stream
+     *
+     * @return void
+     */
+    public function cancel(int $stream): void
+    {
+        unset($this->callbacks[$stream]);
     }
 
     /**
@@ -197,50 +195,18 @@ final class Relay
     /**
      * @return void
      */
-    private function write(): void
-    {
-        asyncCall(function () {
-            $done = 0;
-            $data = '';
-
-            while (!$this->queue->isEmpty()) {
-                $data .= $this->queue->dequeue();
-
-                ++$done;
-
-                if ($done % self::WRITE_ROUNDS === 0) {
-                    Loop::defer(function () {
-                        $this->write();
-                    });
-
-                    break;
-                }
-            }
-
-            yield $this->output->write($data);
-
-            $this->lastWrite  = Loop::now();
-            $this->processing = false;
-        });
-    }
-
-    /**
-     * @return void
-     */
-    private function listen(): void
+    public function listen(): void
     {
         asyncCall(function () {
             while (null !== $chunk = yield $this->input->read()) {
                 $this->parser->append($chunk);
 
                 while ($frame = $this->parser->parse()) {
-                    if (!isset($this->callbacks[$frame->stream])) {
-                        continue 2;
+                    if (isset($this->callbacks[$frame->stream])) {
+                        asyncCall($this->callbacks[$frame->stream], $frame);
                     }
 
-                    asyncCall($this->callbacks[$frame->stream], $frame);
-
-                    unset($this->callbacks[$frame->stream]);
+                    $this->emitter->emit($frame);
                 }
             }
         });

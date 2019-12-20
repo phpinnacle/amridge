@@ -18,8 +18,9 @@
     "require": {
         "php": "^7.1",
         "ext-json": "*",
-        "amphp/socket": "^0.10.11",
-        "phpinnacle/buffer": "^1.0"
+        "amphp/socket": "^1.0",
+        "phpinnacle/buffer": "^1.0",
+        "phpinnacle/ensign": "^1.1"
     },
     "require-dev": {
         "phpbench/phpbench": "^0.16",
@@ -28,7 +29,10 @@
     "autoload": {
         "psr-4": {
             "PHPinnacle\\Goridge\\": "src"
-        }
+        },
+        "files": [
+            "src/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

@@ -59,9 +59,6 @@ final class Parser
 
         $this->buffer->discard(9);
 
-        $frame = new Frame($flags, $opcode, $this->buffer->consume($size));
-        $frame->stream = $stream;
-
-        return $frame;
+        return new Frame($flags, $opcode, $stream, $this->buffer->consume($size));
     }
 }
