@@ -45,11 +45,6 @@ final class Relay
     private $parser;
 
     /**
-     * @var \SplQueue
-     */
-    private $queue;
-
-    /**
      * @var Emitter
      */
     private $emitter;
@@ -75,7 +70,6 @@ final class Relay
 
         $this->buffer   = new Buffer();
         $this->parser   = new Parser();
-        $this->queue    = new \SplQueue();
 
         $this->emitter  = new Emitter();
         $this->iterator = $this->emitter->iterate();

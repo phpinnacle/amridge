@@ -12,6 +12,6 @@ declare(strict_types = 1);
 
 namespace PHPinnacle\Goridge\Exception;
 
-final class FrameException extends GoridgeException
+final class ProtocolException extends GoridgeException
 {
 }

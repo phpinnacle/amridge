@@ -12,7 +12,7 @@ declare(strict_types = 1);
 
 namespace PHPinnacle\Goridge;
 
-class Frame
+final class Frame
 {
     const
         FLAG_RAW  = 1
@@ -59,22 +59,22 @@ class Frame
         $this->body   = $body;
     }
 
-    public static function error(int $flags, int $stream, string $body): self
+    public static function error(int $stream, string $body, int $flags = 0): self
     {
         return new self($flags, self::OPCODE_ERROR, $stream, $body);
     }
 
-    public static function control(int $flags, int $stream, string $body): self
+    public static function control(int $stream, string $body, int $flags = 0): self
     {
         return new self($flags, self::OPCODE_CONTROL, $stream, $body);
     }
 
-    public static function request(int $flags, int $stream, string $body): self
+    public static function request(int $stream, string $body, int $flags = 0): self
     {
         return new self($flags, self::OPCODE_REQEUST, $stream, $body);
     }
 
-    public static function response(int $flags, int $stream, string $body): self
+    public static function response(int $stream, string $body, int $flags = 0): self
     {
         return new self($flags, self::OPCODE_RESPONSE, $stream, $body);
     }
@@ -115,7 +115,13 @@ class Frame
             return $this->body;
         }
 
-        return goridge_decode($this->body);
+        $data = \json_decode($this->body, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception\JSONException(json_last_error_msg());
+        }
+
+        return $data;
     }
 
     /**

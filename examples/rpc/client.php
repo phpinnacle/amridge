@@ -4,7 +4,7 @@ use Amp\Loop;
 use function Amp\call;
 use PHPinnacle\Goridge\RPC\Client;
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../../vendor/autoload.php';
 
 Loop::run(function () {
     /** @var Client $rpc */

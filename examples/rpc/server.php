@@ -3,7 +3,7 @@
 use Amp\Loop;
 use PHPinnacle\Goridge\RPC\Server;
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../../vendor/autoload.php';
 
 class App
 {

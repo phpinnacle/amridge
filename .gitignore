@@ -4,3 +4,6 @@
 /vendor
 /build
 /examples/server
+
+/target
+**/*.rs.bk

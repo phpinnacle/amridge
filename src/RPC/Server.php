@@ -127,9 +127,10 @@ class Server
 
                         try {
                             $result = yield $this->dispatcher->dispatch($method, ...$params);
-                            $response = Frame::response(0, $request->stream, \json_encode($result));
+
+                            $response = Frame::response($request->stream, \json_encode($result));
                         } catch (\Throwable $error) {
-                            $response = Frame::error(0, $request->stream, $error->getMessage());
+                            $response = Frame::error($request->stream, $error->getMessage());
                         }
 
                         yield $relay->send($response);

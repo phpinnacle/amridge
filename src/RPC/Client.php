@@ -83,7 +83,7 @@ final class Client
                 ->append($payload)
             ;
 
-            $frame = Frame::request(Frame::FLAG_RAW, $this->sequence->reserve(), $body->flush());
+            $frame = Frame::request($this->sequence->reserve(), $body->flush(), Frame::FLAG_RAW);
 
             yield $this->connection->send($frame);
 
@@ -109,30 +109,22 @@ final class Client
         $deferred = new Deferred;
 
         $this->connection->subscribe($stream, function (Frame $frame) use ($deferred) {
-            if ($frame->isError()) {
-                $deferred->fail(new Exception\RemoteException($frame->body));
-
-                $this->sequence->release($frame->stream);
-
-                return;
-            }
-
-            if (!$frame->isResponse()) {
-                $deferred->fail(new Exception\RPCException());
-
-                $this->sequence->release($frame->stream);
-
-                return;
-            }
-
             try {
+                if ($frame->isError()) {
+                    throw new Exception\RemoteException($frame->body);
+                }
+
+                if (!$frame->isResponse()) {
+                    throw new Exception\RPCException();
+                }
+
                 $deferred->resolve($frame->payload());
             } catch (Exception\GoridgeException $error) {
                 $deferred->fail($error);
+            } finally {
+                $this->sequence->release($frame->stream);
+                $this->connection->cancel($frame->stream);
             }
-
-            $this->sequence->release($frame->stream);
-            $this->connection->cancel($frame->stream);
         });
 
         return $deferred->promise();
