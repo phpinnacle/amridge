@@ -34,21 +34,23 @@ class Worker
         return call(function () {
             /** @var Relay $relay */
             $relay = yield Relay::pipes();
-
-            /** @var Frame $control */
-            $control = yield $relay->receive();
-
-            if (!$control->isControl()) {
-                throw new Exception\ProtocolException("Expected control frame.");
-            }
-
-            if (!$payload = \json_decode($control->body, true)) {
-                throw new Exception\JSONException("Expected JSON payload.");
-            }
-
-            if (!empty($payload['pid'])) {
-                yield $relay->send(Frame::control(0, \json_encode(['pid' => \getmypid()])));
-            }
+//
+//            /** @var Frame $control */
+//            $control = yield $relay->receive();
+//
+//            if (!$control->isControl()) {
+//                throw new Exception\ProtocolException("Expected control frame.");
+//            }
+//
+//            unpack('')
+//
+//            if () {
+//                throw new Exception\JSONException("Expected JSON payload.");
+//            }
+//
+//            if (!empty($payload['pid'])) {
+//                yield $relay->send(Frame::control(0, \json_encode(['pid' => \getmypid()])));
+//            }
 
             return new self($relay);
         });
@@ -92,13 +94,13 @@ class Worker
      */
     public function error(int $stream, string $message, int $code = 0): Promise
     {
-        $frame = (new Buffer)
+        $buffer = (new Buffer)
             ->appendUint32($code)
             ->appendUint32(\strlen($message))
             ->append($message)
         ;
 
-        return $this->relay->send(Frame::error($stream, $frame->flush()));
+        return $this->relay->send(Frame::error($stream, $buffer->flush()));
     }
 
     /**

@@ -78,15 +78,13 @@ class Client
      */
     public function response(Response $response): Promise
     {
-        $frame = (new Buffer)
+        $buffer = (new Buffer)
             ->appendUint16($response->status)
-            ->appendUint32(\strlen($response->body))
-            ->append($response->body)
             ->appendUint16(\count($response->headers))
         ;
 
         foreach ($response->headers as $field => $value) {
-            $frame
+            $buffer
                 ->appendUint16(\strlen($field))
                 ->append($field)
                 ->appendUint16(\strlen($value))
@@ -94,6 +92,11 @@ class Client
             ;
         }
 
-        return $this->worker->send($response->stream, $frame->flush());
+        $buffer
+            ->appendUint32(\strlen($response->body))
+            ->append($response->body)
+        ;
+
+        return $this->worker->send($response->stream, $buffer->flush());
     }
 }

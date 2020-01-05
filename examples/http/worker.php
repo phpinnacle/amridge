@@ -1,5 +1,6 @@
 <?php
 
+use Amp\Delayed;
 use Amp\Loop;
 use PHPinnacle\Goridge\HTTP\Client;
 use PHPinnacle\Goridge\HTTP\Request;
@@ -13,10 +14,8 @@ Loop::run(function () {
     $client = yield Client::connect();
 
     while ($request = yield $client->request()) {
-        asyncCall(function (Request $request) use ($client) {
-            $response = Response::ok($request->stream, 'Hello');
-
-            yield $client->response($response);
-        }, $request);
+        asyncCall(function (Client $client, Request $request) {
+            yield $client->response(new Response($request->stream, 200, sprintf('Hello from %s!', \getmypid())));
+        }, $client, $request);
     }
 });

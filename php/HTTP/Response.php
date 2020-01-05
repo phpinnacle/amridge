@@ -32,23 +32,11 @@ class Response
      * @param string $body
      * @param array  $headers
      */
-    public function __construct(int $stream, int $status, string $body, array $headers = [])
+    public function __construct(int $stream, int $status = 200, string $body = '', array $headers = [])
     {
         $this->stream  = $stream;
         $this->status  = $status;
         $this->body    = $body;
         $this->headers = $headers;
-    }
-
-    /**
-     * @param int    $stream
-     * @param string $body
-     * @param array  $headers
-     *
-     * @return self
-     */
-    public static function ok(int $stream, string $body, array $headers = []): self
-    {
-        return new self($stream, 200, $body, $headers);
     }
 }

@@ -1,9 +1,13 @@
 [package]
 name = "amridge"
 version = "0.1.0"
-authors = ["PHPinnacle Developers <dev@phpinnacle.com>"]
+authors = ["PHPinnacle developers <dev@phpinnacle.com>"]
 edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 hyper = "0.13"
 tokio = { version = "0.2", features = ["full"] }
+
+bytes = "0.5"

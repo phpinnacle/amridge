@@ -1,47 +1,35 @@
-#![deny(warnings)]
-
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Server, Request, Body, Response};
-use std::net::SocketAddr;
-use std::process::{Command, Stdio};
-use std::convert::Infallible;
-//use std::io::Write;
+use hyper::{Server, Error, Response, Body, Request};
+use std::sync::Arc;
 
-async fn hello_world(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    Ok(Response::new("Hello, World".into()))
-}
+use crate::handler::Handler;
+use crate::process::ProcessPool;
+
+mod process;
+mod handler;
 
 #[tokio::main]
 async fn main() {
-    let child = Command::new("/usr/bin/php")
-        .arg("/data/Development/phpinnacle/amridge/examples/http/worker.php")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn().unwrap();
+    let cmd = "/usr/bin/php".to_string();
+    let args = vec!["/data/Development/phpinnacle/amridge/examples/http/worker.php".to_string()];
+    let pool = ProcessPool::create(4, cmd, args).await.unwrap();
 
-    println!("Spawn worker");
+    let handler = Arc::new(Handler::create(pool));
 
-//    let child_stdin = child.stdin.as_mut().unwrap();
-//    child_stdin.write_all(b"Hello, world!\n").unwrap();
+    let service = make_service_fn(move |_conn| {
+        let client = handler.clone();
 
-    let output = child.wait_with_output().unwrap();
-
-    println!("output = {:?}", output);
-
-    let make_service = make_service_fn(|_| {
-        async {
-
-            // service_fn converts our function into a `Service`
-            Ok::<_, Infallible>(service_fn(hello_world))
-        }
+        async move { Ok::<_, Error>(service_fn(move |req| proxy(client.clone(), req))) }
     });
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    let server = Server::bind(&addr).serve(make_service);
-
-    println!("Listening on http://{}", addr);
+    let addr = ([127, 0, 0, 1], 3000).into();
+    let server = Server::bind(&addr).serve(service);
 
     if let Err(e) = server.await {
-        eprintln!("Server error: {}", e);
+        eprintln!("server error: {}", e);
     }
+}
+
+async fn proxy(client: Arc<Handler>, req: Request<Body>) -> Result<Response<Body>, Error> {
+    client.handle(req).await
 }

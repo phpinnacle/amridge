@@ -38,7 +38,7 @@ class Request
      * @param string $body
      * @param array  $headers
      */
-    public function __construct(int $stream, string $method, string $uri, string $body, array $headers = [])
+    public function __construct(int $stream, string $method, string $uri, string $body = '', array $headers = [])
     {
         $this->stream  = $stream;
         $this->method  = $method;

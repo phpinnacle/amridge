@@ -15,6 +15,7 @@ namespace PHPinnacle\Goridge;
 final class Frame
 {
     const
+        FLAG_NONE = 0,
         FLAG_RAW  = 1
     ;
 
@@ -59,22 +60,22 @@ final class Frame
         $this->body   = $body;
     }
 
-    public static function error(int $stream, string $body, int $flags = 0): self
+    public static function error(int $stream, string $body, int $flags = self::FLAG_NONE): self
     {
         return new self($flags, self::OPCODE_ERROR, $stream, $body);
     }
 
-    public static function control(int $stream, string $body, int $flags = 0): self
+    public static function control(int $stream, string $body, int $flags = self::FLAG_NONE): self
     {
         return new self($flags, self::OPCODE_CONTROL, $stream, $body);
     }
 
-    public static function request(int $stream, string $body, int $flags = 0): self
+    public static function request(int $stream, string $body, int $flags = self::FLAG_NONE): self
     {
         return new self($flags, self::OPCODE_REQEUST, $stream, $body);
     }
 
-    public static function response(int $stream, string $body, int $flags = 0): self
+    public static function response(int $stream, string $body, int $flags = self::FLAG_NONE): self
     {
         return new self($flags, self::OPCODE_RESPONSE, $stream, $body);
     }
