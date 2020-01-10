@@ -1,41 +1,42 @@
 use std::io::Error;
-use std::sync::Mutex;
-use std::time::Instant;
+use std::time::{Instant};
 use std::process::{Stdio};
 use tokio::prelude::*;
 use tokio::process::{Command, Child, ChildStdin, ChildStdout};
+use std::collections::VecDeque;
 
+#[derive(Debug)]
 pub struct ProcessPool {
-    workers: Mutex<Vec<Process>>,
+    num: u32,
+    cmd: String,
+    args: Vec<String>,
+    workers: VecDeque<Process>,
 }
 
 impl ProcessPool {
-    pub async fn create(num: u32, cmd: String, args: Vec<String>) -> Result<ProcessPool, Error> {
-        let mut items: Vec<Process> = Vec::new();
-
-        for _ in 0..num {
-            items.push(Process::spawn(&cmd, &args).await?);
+    pub fn new(num: u32, cmd: String, args: Vec<String>) -> ProcessPool {
+        ProcessPool {
+            num,
+            cmd,
+            args,
+            workers: VecDeque::with_capacity(num as usize)
         }
-
-        let mutex = Mutex::new(items);
-
-        Ok(ProcessPool {
-            workers: mutex
-        })
     }
 
-    pub fn pop(&self) -> Process {
-        let mut workers = self.workers.lock()
-            .expect("Unable to lock workers for pop");
-
-        return workers.pop().unwrap();
+    pub fn pop(&mut self) -> Process {
+        self.workers.pop_front().unwrap()
     }
 
-    pub fn push(&self, process: Process) {
-        let mut workers = self.workers.lock()
-            .expect("Unable to lock workers for push");
+    pub fn push(&mut self, process: Process) {
+        self.workers.push_back(process);
+    }
+}
 
-        workers.push(process);
+impl Drop for ProcessPool {
+    fn drop(&mut self) {
+        for worker in self.workers.iter_mut() {
+            worker.kill();
+        }
     }
 }
 
@@ -48,7 +49,7 @@ pub struct Process {
 }
 
 impl Process {
-    pub async fn spawn(cmd: &String, args: &Vec<String>) -> Result<Process, Error> {
+    pub async fn spawn(cmd: String, args: Vec<String>) -> Result<Process, Error> {
         let mut instance = Command::new(cmd)
             .args(args)
             .stdin(Stdio::piped())
@@ -66,23 +67,49 @@ impl Process {
         })
     }
 
-   pub fn pid(&self) -> u32 {
-       self.instance.id()
-   }
+//    pub fn mon(&self) {
+//        let child = self.instance;
+//
+//        tokio::spawn(async move {
+//            let mut interval = time::interval(Duration::from_secs(3));
+//
+//            loop {
+//                interval.tick().await;
+//
+//                println!("{}", child.id());
+//            }
+//        });
+//    }
 
-   pub fn kill(&mut self) {
-       self.instance.kill().expect("NoError");
-   }
+    pub fn pid(&self) -> u32 {
+        self.instance.id()
+    }
 
-   pub async fn write(&mut self, data: Vec<u8>) -> Result<(), Error> {
-       Ok(self.stdin.write_all(data.as_ref()).await?)
-   }
+    pub fn kill(&mut self) {
+        self.instance.kill().expect("No Error");
+    }
 
-   pub async fn read(&mut self, num: usize) -> Result<Vec<u8>, Error> {
-       let mut out = vec![0u8; num];
+    pub async fn write(&mut self, data: Vec<u8>) -> Result<(), Error> {
+        Ok(self.stdin.write_all(data.as_ref()).await?)
+    }
 
-       self.stdout.read_exact(&mut out).await?;
+    pub async fn read(&mut self, num: usize) -> Result<Vec<u8>, Error> {
+        let mut out = vec![0u8; num];
 
-       Ok(out)
-   }
+        self.stdout.read_exact(&mut out).await?;
+
+        Ok(out)
+    }
+}
+
+impl Drop for Process {
+    fn drop(&mut self) {
+        self.kill();
+    }
+}
+
+impl Into<u32> for Process {
+    fn into(self) -> u32 {
+        self.pid()
+    }
 }

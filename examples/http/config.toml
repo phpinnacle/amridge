@@ -1,0 +1,5 @@
+[pool]
+command = "examples/http/worker.php"
+
+[server]
+address = "0.0.0.0:6500"
