@@ -4,13 +4,14 @@ use std::process::{Stdio};
 use tokio::prelude::*;
 use tokio::process::{Command, Child, ChildStdin, ChildStdout};
 use std::collections::VecDeque;
+use std::sync::Mutex;
 
 #[derive(Debug)]
 pub struct ProcessPool {
     num: u32,
     cmd: String,
     args: Vec<String>,
-    workers: VecDeque<Process>,
+    workers: Mutex<VecDeque<Process>>,
 }
 
 impl ProcessPool {
@@ -19,22 +20,30 @@ impl ProcessPool {
             num,
             cmd,
             args,
-            workers: VecDeque::with_capacity(num as usize)
+            workers: Mutex::new(VecDeque::with_capacity(num as usize))
         }
     }
 
-    pub fn pop(&mut self) -> Process {
-        self.workers.pop_front().unwrap()
+    pub fn run(&self) {
+        for i in 0..self.num {
+            let process = Process::spawn(self.cmd.clone(), self.args.clone());
+
+            self.push(process);
+        }
     }
 
-    pub fn push(&mut self, process: Process) {
-        self.workers.push_back(process);
+    pub fn pop(&self) -> Process {
+        self.workers.lock().expect("No error").pop_front().unwrap()
+    }
+
+    pub fn push(&self, process: Process) {
+        self.workers.lock().expect("No error").push_back(process);
     }
 }
 
 impl Drop for ProcessPool {
     fn drop(&mut self) {
-        for worker in self.workers.iter_mut() {
+        for worker in self.workers.lock().expect("No error").iter_mut() {
             worker.kill();
         }
     }
@@ -49,22 +58,22 @@ pub struct Process {
 }
 
 impl Process {
-    pub async fn spawn(cmd: String, args: Vec<String>) -> Result<Process, Error> {
+    pub fn spawn(cmd: String, args: Vec<String>) -> Process {
         let mut instance = Command::new(cmd)
             .args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .spawn()?;
+            .spawn()
+            .unwrap();
 
         let stdin = instance.stdin().take().unwrap();
         let stdout = instance.stdout().take().unwrap();
-
-        Ok(Process {
+        Process {
             instance,
             stdin,
             stdout,
             started: Instant::now(),
-        })
+        }
     }
 
 //    pub fn mon(&self) {

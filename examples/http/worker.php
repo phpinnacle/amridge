@@ -15,6 +15,8 @@ Loop::run(function () {
 
     while ($request = yield $client->request()) {
         asyncCall(function (Client $client, Request $request) {
+            yield new Delayed(3000);
+
             yield $client->response(new Response($request->stream, 200, sprintf('Hello from %s!', \getmypid())));
         }, $client, $request);
     }

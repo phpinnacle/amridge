@@ -23,15 +23,17 @@ impl Server {
     }
 
     pub async fn serve(&self) {
-        let pool = Arc::new(ProcessPool::new(
+        let pool = ProcessPool::new(
             self.config.pool.workers.clone(),
             self.config.pool.interpreter.clone(),
             vec![self.config.pool.command.clone()]
-        ));
+        );
+
+        pool.run();
 
         let addr = ([127, 0, 0, 1], 3000).into();
         let server = hyper::Server::bind(&addr).serve(Connection {
-            pool: pool.clone(),
+            pool: Arc::new(pool),
         });
 
         if let Err(e) = server.await {
@@ -43,6 +45,14 @@ impl Server {
 #[derive(Debug, Clone)]
 struct Connection {
     pool: Arc<ProcessPool>,
+}
+
+impl Connection {
+    fn new(pool: Arc<ProcessPool>) -> Connection {
+        Connection {
+            pool
+        }
+    }
 }
 
 impl<T> Service<T> for Connection {
@@ -74,32 +84,32 @@ impl Handler {
     }
 
     async fn handle(&mut self, req: Request<Body>) -> Result<Response<Body>, Error> {
-//        let mut worker = self.pool.pop();
-//
-//        let frame_req = self.pack(req);
-//
-//        worker.write(frame_req).await.expect("No error");
-//
-//        let mut header = Bytes::from(worker.read(9).await.expect("No error"));
-//
-//        let flags = header.get_u8();
-//        let opcode = header.get_u8();
-//        let stream = header.get_u16();
-//        let size = header.get_u32() as usize;
-//        let check = header.get_u8();
-//
-//        let mut response = Bytes::from(worker.read(size).await.expect("No error"));
-//
-//        let status = response.get_u16();
-//        let headers = response.get_u16(); // TODO: headers!
-//        let length = response.get_u32() as usize;
-//        let body = response.slice(0..length);
-//
-//        self.pool.push(worker);
+        let mut worker = self.pool.pop();
+
+        let frame_req = self.pack(req);
+
+        worker.write(frame_req).await.expect("No error");
+
+        let mut header = Bytes::from(worker.read(9).await.expect("No error"));
+
+        let flags = header.get_u8();
+        let opcode = header.get_u8();
+        let stream = header.get_u16();
+        let size = header.get_u32() as usize;
+        let check = header.get_u8();
+
+        let mut response = Bytes::from(worker.read(size).await.expect("No error"));
+
+        let status = response.get_u16();
+        let headers = response.get_u16(); // TODO: headers!
+        let length = response.get_u32() as usize;
+        let body = response.slice(0..length);
+
+        self.pool.push(worker);
 
         Ok(Response::builder()
-            .status(200)
-            .body("Hello".into())
+            .status(status)
+            .body(body.into())
             .unwrap())
     }
 
@@ -158,4 +168,3 @@ impl Service<Request<Body>> for Handler {
         async move { clone.handle(req).await }.boxed()
     }
 }
-
